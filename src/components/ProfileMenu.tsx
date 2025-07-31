@@ -51,16 +51,16 @@ export default function ProfileMenu({ className = "" }: ProfileMenuProps) {
       {profileOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-lg shadow-lg z-10 p-4 flex flex-col gap-2 animate-fade-in">
           <div className="mb-2">
-            <div className="font-semibold text-gray-900">
-              {username || "Unknown User"}
+            <div className="font-semibold text-lg text-gray-900">
+              @{username || "Unknown User"}
             </div>
             <div className="text-xs text-gray-500">
-              Last login:{" "}
-              {lastLogin ? new Date(lastLogin).toLocaleString() : "N/A"}
+              Last Login:{" "}
+              {lastLogin ? new Date(lastLogin).toLocaleDateString() : "N/A"}
             </div>
           </div>
           <button
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-600 hover:bg-gray-50 transition text-sm font-semibold"
+            className="flex items-center gap-2 px-3 py-2 border rounded-lg text-red-600 hover:bg-gray-50 transition text-sm font-semibold"
             onClick={() => {
               localStorage.removeItem("apifyApiKey");
               localStorage.removeItem("currentUser");

@@ -18,9 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const existing = await users.findOne({ username });
     if (existing) return res.status(409).json({ error: 'Username already exists' });
     const hashed = await bcrypt.hash(password, 10);
-    const hashedApiKey = await bcrypt.hash(apiKey, 10);
     const now = new Date();
-    await users.insertOne({ username, password: hashed, apiKey: hashedApiKey, lastLogin: now, createdAt: now });
+    await users.insertOne({ username, password: hashed, apiKey, lastLogin: now, createdAt: now });
     return res.status(201).json({ message: 'User registered successfully' });
   } catch (e) {
     return res.status(500).json({ error: 'Server error' });

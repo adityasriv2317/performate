@@ -27,8 +27,7 @@ export default function LandingPage() {
         transition={{ duration: 0.6 }}
         className="max-w-2xl w-full text-center flex flex-col items-center"
       >
-        <Logo className="mb-6 text-3xl" />
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">Performate</h1>
+        <Logo className="mb-6 text-4xl" />
         <p className="text-lg text-gray-600 mb-8">
           Run, manage, and visualize your Apify actors with ease.<br />
           <span className="text-blue-600 font-semibold">Professional, modern, and secure.</span>
@@ -55,7 +54,7 @@ export default function LandingPage() {
           Get Started
         </Link>
       </motion.div>
-      <footer className="absolute bottom-4 text-gray-400 text-sm w-full text-center">© {new Date().getFullYear()} Performate. All rights reserved.</footer>
+      <footer className="absolute bottom-2 border-t py-2 text-gray-400 text-sm w-full text-center">© {new Date().getFullYear()} Performate. All rights reserved.</footer>
     </div>
   );
 }
