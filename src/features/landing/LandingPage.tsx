@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { LogIn, Rocket, ShieldCheck, ListChecks, BarChart3 } from 'lucide-react';
@@ -7,7 +5,6 @@ import Link from 'next/link';
 import Logo from '../../components/Logo';
 
 export default function LandingPage() {
-  // Example loading state for future use (e.g., auth check, initial data)
   const [loading, setLoading] = useState(false);
 
   return (

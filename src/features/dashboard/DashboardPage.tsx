@@ -3,12 +3,14 @@ import { ListChecks, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Logo from "../../components/Logo";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import ProfileMenu from "../../components/ProfileMenu";
 import axios from "axios";
 
 interface Actor {
   id: string;
   name: string;
+  username: string;
   title: string;
   createdAt: string;
 }
@@ -17,7 +19,7 @@ export default function DashboardPage() {
   const [actors, setActors] = useState<Actor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  // Profile state moved to ProfileMenu
+  const router = useRouter();
 
   useEffect(() => {
     const apiKey = localStorage.getItem("apifyApiKey");
@@ -42,7 +44,6 @@ export default function DashboardPage() {
         setLoading(false);
       }
     })();
-    // ProfileMenu handles its own dropdown logic
   }, []);
 
   return (
@@ -80,21 +81,31 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {actors.map((actor) => (
-                <Link
+                <button
                   key={actor.id}
-                  href={`/actor/${actor.name}`}
-                  className="bg-blue-50 border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-200 group min-h-[140px] flex flex-col justify-between"
+                  onClick={() =>
+                    router.push(`/actor/${actor.name}/${actor.username}`)
+                  }
+                  className="bg-blue-50 border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-200 group min-h-[140px] flex flex-col justify-between text-left w-full"
+                  type="button"
                 >
                   <h3 className="text-xl font-semibold text-gray-900 mb-1 group-hover:text-blue-700 transition-colors">
                     {actor.title}
                   </h3>
                   <span className="text-xs text-blue-600 font-mono bg-blue-50 rounded px-2 py-1">
+                    <span className="text-gray-700 font-semibold">Actor:</span>{" "}
                     {actor.name}
+                  </span>
+                  <span className="text-xs text-blue-600 font-mono bg-blue-50 rounded px-2 py-1">
+                    <span className="text-gray-700 font-semibold">
+                      Username:
+                    </span>{" "}
+                    {actor.username}
                   </span>
                   <span className="text-xs text-gray-500 font-mono bg-blue-100 rounded px-2 py-1">
                     {actor.createdAt}
                   </span>
-                </Link>
+                </button>
               ))}
             </div>
           )}
