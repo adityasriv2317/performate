@@ -15,12 +15,13 @@ export default function ProfileMenu({ className = "" }: ProfileMenuProps) {
     const storedUser = localStorage.getItem("currentUser");
     if (storedUser) {
       setUsername(storedUser);
-      fetch(`/api/profile?username=${encodeURIComponent(storedUser)}`)
-        .then(async (res) => {
+      fetch(`/api/profile?username=${encodeURIComponent(storedUser)}`).then(
+        async (res) => {
           if (!res.ok) return;
           const data = await res.json();
           if (data.lastLogin) setLastLogin(data.lastLogin);
-        });
+        }
+      );
     }
     const handleClick = (e: MouseEvent) => {
       if (
@@ -35,7 +36,10 @@ export default function ProfileMenu({ className = "" }: ProfileMenuProps) {
   }, []);
 
   return (
-    <div className={`relative ${className}`} ref={profileRef}>
+    <div
+      className={`relative ${className} border border-gray-400 rounded-lg`}
+      ref={profileRef}
+    >
       <button
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition focus:outline-none"
         onClick={() => setProfileOpen((v) => !v)}
@@ -51,7 +55,8 @@ export default function ProfileMenu({ className = "" }: ProfileMenuProps) {
               {username || "Unknown User"}
             </div>
             <div className="text-xs text-gray-500">
-              Last login: {lastLogin ? new Date(lastLogin).toLocaleString() : "N/A"}
+              Last login:{" "}
+              {lastLogin ? new Date(lastLogin).toLocaleString() : "N/A"}
             </div>
           </div>
           <button
