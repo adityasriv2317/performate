@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Loader2,
   Play,
@@ -8,6 +8,8 @@ import {
   FileText,
   Terminal,
   Download,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Logo from "../../components/Logo";
@@ -65,6 +67,12 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
   const [error, setError] = useState("");
   const [input, setInput] = useState<any>({});
   const [runStatus, setRunStatus] = useState<string | null>(null);
+  const [expandedFields, setExpandedFields] = useState<{
+    [key: string]: boolean;
+  }>({});
+  const [overflowingFields, setOverflowingFields] = useState<{
+    [key: string]: boolean;
+  }>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -136,6 +144,34 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
   const handleInputChange = (key: string, value: any) => {
     setInput((prev: any) => ({ ...prev, [key]: value }));
   };
+
+  const toggleExpand = (key: string) => {
+    setExpandedFields((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Utility to check if a description overflows 3 lines
+  const descRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  useEffect(() => {
+    if (!actor?.inputSchema?.properties) return;
+    const newOverflow: { [key: string]: boolean } = {};
+    Object.entries(actor.inputSchema.properties).forEach(([key, prop]: any) => {
+      if (descRefs.current[key]) {
+        const el = descRefs.current[key]!;
+        if (!expandedFields[key]) {
+          // Only measure overflow when collapsed
+          el.classList.remove("line-clamp-3", "overflow-hidden");
+          const isOverflowing = el.scrollHeight > el.clientHeight + 2;
+          el.classList.add("line-clamp-3", "overflow-hidden");
+          newOverflow[key] = isOverflowing;
+        } else {
+          // When expanded, always show the collapse button if it was overflowing when collapsed
+          newOverflow[key] = true;
+        }
+      }
+    });
+    setOverflowingFields(newOverflow);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actor, expandedFields]);
 
   const handleRun = (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,61 +269,133 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                           <span className="text-red-500 ml-1">*</span>
                         )}
                       </label>
-                      {prop.description && (
-                        <div
-                          className="text-xs text-gray-600 mb-2"
-                          dangerouslySetInnerHTML={{ __html: prop.description }}
-                        />
-                      )}
-                      {/* String List (Array) Input */}
-                      {prop.type === "array" &&
-                        prop.editor === "stringList" && (
-                          <div className="space-y-2">
-                            {(input[key] || []).map(
-                              (item: string, index: number) => (
-                                <div key={index} className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 bg-white text-sm"
-                                    placeholder={
-                                      prop.placeholderValue || prop.title
-                                    }
-                                    value={item}
-                                    onChange={(e) => {
-                                      const newArray = [...(input[key] || [])];
-                                      newArray[index] = e.target.value;
-                                      handleInputChange(key, newArray);
-                                    }}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newArray = (
-                                        input[key] || []
-                                      ).filter(
-                                        (_: any, i: number) => i !== index
-                                      );
-                                      handleInputChange(key, newArray);
-                                    }}
-                                    className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              )
-                            )}
+                      {prop.description ? (
+                        <div className="relative mb-2 group">
+                          <div
+                            ref={(el) => {
+                              descRefs.current[key] = el;
+                            }}
+                            className={`text-xs text-gray-600 whitespace-pre-line pr-8 ${
+                              expandedFields[key]
+                                ? ""
+                                : "line-clamp-3 overflow-hidden"
+                            }`}
+                            style={{
+                              maxHeight: expandedFields[key] ? "none" : "4.5em",
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: prop.description,
+                            }}
+                          />
+                          {overflowingFields[key] && (
                             <button
                               type="button"
-                              onClick={() => {
-                                const newArray = [...(input[key] || []), ""];
-                                handleInputChange(key, newArray);
-                              }}
-                              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                              aria-label={
+                                expandedFields[key] ? "Collapse" : "Expand"
+                              }
+                              className="absolute right-1 top-1 bg-white/90 rounded-full p-1 shadow border border-gray-200 flex items-center justify-center transition hover:bg-blue-100 text-blue-600 focus:outline-none"
+                              style={{ visibility: "visible", opacity: 1 }}
+                              onClick={() => toggleExpand(key)}
                             >
-                              Add {prop.placeholderValue || "Item"}
+                              {expandedFields[key] ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
+                      ) : null}
+                      {/* Input fields always rendered below, regardless of description */}
+                      {/* Array of objects (container fields) */}
+                      {prop.type === "array" && prop.items && prop.items.type === "object" && (
+                        <div className="space-y-4">
+                          {(input[key] || []).map((item: any, idx: number) => (
+                            <div key={idx} className="border border-gray-300 rounded-lg p-3 bg-white flex flex-col gap-2 relative">
+                              {Object.entries(prop.items.properties || {}).map(([subKey, subProp]: any) => (
+                                <div key={subKey} className="flex flex-col gap-1">
+                                  <label className="text-xs font-semibold text-gray-700">{subProp.title || subKey}</label>
+                                  <input
+                                    type="text"
+                                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                    placeholder={subProp.description || subProp.title}
+                                    value={item[subKey] || ""}
+                                    onChange={e => {
+                                      const newArr = [...(input[key] || [])];
+                                      newArr[idx] = { ...newArr[idx], [subKey]: e.target.value };
+                                      handleInputChange(key, newArr);
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newArr = (input[key] || []).filter((_: any, i: number) => i !== idx);
+                                  handleInputChange(key, newArr);
+                                }}
+                                className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                              >Remove</button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newArr = [...(input[key] || []), {}];
+                              handleInputChange(key, newArr);
+                            }}
+                            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                          >Add {prop.title || "Item"}</button>
+                        </div>
+                      )}
+                      {/* String List (Array) Input (default if no editor specified, or array of strings) */}
+                      {prop.type === "array" && (!prop.items || prop.items.type === "string" || !prop.items.type) && (!prop.editor || prop.editor === "stringList") && (
+                        <div className="space-y-2">
+                          {(input[key] || []).map(
+                            (item: string, index: number) => (
+                              <div key={index} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 bg-white text-sm"
+                                  placeholder={
+                                    prop.placeholderValue || prop.title
+                                  }
+                                  value={item}
+                                  onChange={(e) => {
+                                    const newArray = [...(input[key] || [])];
+                                    newArray[index] = e.target.value;
+                                    handleInputChange(key, newArray);
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newArray = (
+                                      input[key] || []
+                                    ).filter(
+                                      (_: any, i: number) => i !== index
+                                    );
+                                    handleInputChange(key, newArray);
+                                  }}
+                                  className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newArray = [...(input[key] || []), ""];
+                              handleInputChange(key, newArray);
+                            }}
+                            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                          >
+                            Add {prop.placeholderValue || "Item"}
+                          </button>
+                        </div>
+                      )}
                       {/* Select Dropdown */}
                       {prop.type === "string" && prop.editor === "select" && (
                         <select

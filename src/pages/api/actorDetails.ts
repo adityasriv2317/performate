@@ -53,22 +53,24 @@ export default async function handler(
 
     let inputSchema = null;
 
-    // get build id
-    const latestBuildId = actorData.taggedBuilds?.latest?.buildId;
-    console.log(
-      `Latest build ID for actor ${actorRef}:`,
-      actorData.taggedBuilds?.latest?.buildId
-    );
 
-    if (latestBuildId) {
+    // get build id (prefer latest, fallback to canary)
+    let buildId = actorData.taggedBuilds?.latest?.buildId;
+    let buildTagUsed = 'latest';
+    if (!buildId && actorData.taggedBuilds?.canary?.buildId) {
+      buildId = actorData.taggedBuilds.canary.buildId;
+      buildTagUsed = 'canary';
+    }
+
+    if (buildId) {
       try {
         // Fetch the specific build details using its ID
         const buildInfoRes = await axios.get(
-          `https://api.apify.com/v2/actor-builds/${latestBuildId}`,
+          `https://api.apify.com/v2/actor-builds/${buildId}`,
           { headers }
         );
 
-        // console.log(`Successfully fetched 2`);
+        // console.log(`Successfully fetched build (${buildTagUsed})`);
         inputSchema =
           buildInfoRes.data?.data?.inputSchema ||
           buildInfoRes.data?.inputSchema;
@@ -76,23 +78,23 @@ export default async function handler(
         if (inputSchema && typeof inputSchema === "string") {
           try {
             inputSchema = JSON.parse(inputSchema);
-            console.log("input schema found and parsed successfully");
+            // console.log("input schema found and parsed successfully");
           } catch (e) {
             console.warn(
-              `Failed to parse input schema for build ID ${latestBuildId}:`,
+              `Failed to parse input schema for build ID ${buildId}:`,
               e
             );
           }
         }
       } catch (err) {
         console.warn(
-          `Could not fetch input schema for build ID ${latestBuildId}:`,
+          `Could not fetch input schema for build ID ${buildId}:`,
           (err as any).message || err
         );
       }
     } else {
       console.warn(
-        `No 'latest' build ID found for actor ${actorRef}. Cannot fetch input schema.`
+        `No 'latest' or 'canary' build ID found for actor ${actorRef}. Cannot fetch input schema.`
       );
     }
 
