@@ -10,6 +10,7 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  DownloadIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef as useDialogRef } from "react";
@@ -639,7 +640,30 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                           {runInfo.id}
                         </span>
                       </div>
-                      <div className="mt-4">
+                      <div className="mt-4 flex flex-col gap-2">
+                        <button
+                          className="self-end px-4 py-2 absolute top-10 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition text-sm"
+                          onClick={() => {
+                            const content = JSON.stringify(runInfo, null, 2);
+                            const blob = new Blob([content], {
+                              type: "application/json",
+                            });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `actor-run-${runInfo.id}.json`;
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(() => {
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }, 100);
+                          }}
+                          type="button"
+                        >
+                          <DownloadIcon className="w-4 h-4 mr-1 inline" />
+                          Download JSON
+                        </button>
                         <pre className="bg-gray-950 rounded p-3 text-xs overflow-x-auto max-h-72 border border-gray-200">
                           {JSON.stringify(runInfo, null, 2)}
                         </pre>
