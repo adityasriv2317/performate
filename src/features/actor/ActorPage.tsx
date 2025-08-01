@@ -12,6 +12,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRef as useDialogRef } from "react";
 import Logo from "../../components/Logo";
 import Link from "next/link";
 import axios from "axios";
@@ -173,13 +174,59 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actor, expandedFields]);
 
-  const handleRun = (e: React.FormEvent) => {
+  // Util: Run actor via Apify API
+  async function runActorAsync(
+    actorId: string,
+    inputObj: object,
+    apiKey: string,
+    build?: string
+  ) {
+    try {
+      const headers = { Authorization: `Bearer ${apiKey}` };
+      const params: { [key: string]: string } = {};
+      if (build) params.build = build;
+      const response = await axios.post(
+        `https://api.apify.com/v2/acts/${actorId}/runs`,
+        inputObj,
+        { headers, params }
+      );
+      const run = response.data.data;
+      return run;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  // Enhanced handleRun: start real actor run
+  const [runInfo, setRunInfo] = useState<any>(null);
+  const [runError, setRunError] = useState<string>("");
+  const [showRunDialog, setShowRunDialog] = useState(false);
+  const dialogRef = useDialogRef<HTMLDivElement>(null);
+  const handleRun = async (e: React.FormEvent) => {
     e.preventDefault();
     setRunStatus("running");
-    // Simulate actor run
-    setTimeout(() => {
+    setRunError("");
+    setRunInfo(null);
+    try {
+      if (!actor) throw new Error("No actor loaded");
+      const apiKey =
+        typeof window !== "undefined"
+          ? localStorage.getItem("apifyApiKey") || ""
+          : "";
+      if (!apiKey) throw new Error("No Apify API key found");
+      // actor.id is like 'apify~instagram-scraper'
+      const run = await runActorAsync(actor.id, input, apiKey);
+      setRunInfo(run);
       setRunStatus("success");
-    }, 1500);
+      setShowRunDialog(true);
+    } catch (err: any) {
+      setRunStatus("error");
+      setRunError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to start actor run"
+      );
+    }
   };
 
   const showLoading = loading || runStatus === "running";
@@ -308,94 +355,125 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                       ) : null}
                       {/* Input fields always rendered below, regardless of description */}
                       {/* Array of objects (container fields) */}
-                      {prop.type === "array" && prop.items && prop.items.type === "object" && (
-                        <div className="space-y-4">
-                          {(input[key] || []).map((item: any, idx: number) => (
-                            <div key={idx} className="border border-gray-300 rounded-lg p-3 bg-white flex flex-col gap-2 relative">
-                              {Object.entries(prop.items.properties || {}).map(([subKey, subProp]: any) => (
-                                <div key={subKey} className="flex flex-col gap-1">
-                                  <label className="text-xs font-semibold text-gray-700">{subProp.title || subKey}</label>
-                                  <input
-                                    type="text"
-                                    className="border border-gray-300 rounded px-2 py-1 text-sm"
-                                    placeholder={subProp.description || subProp.title}
-                                    value={item[subKey] || ""}
-                                    onChange={e => {
-                                      const newArr = [...(input[key] || [])];
-                                      newArr[idx] = { ...newArr[idx], [subKey]: e.target.value };
+                      {prop.type === "array" &&
+                        prop.items &&
+                        prop.items.type === "object" && (
+                          <div className="space-y-4">
+                            {(input[key] || []).map(
+                              (item: any, idx: number) => (
+                                <div
+                                  key={idx}
+                                  className="border border-gray-300 rounded-lg p-3 bg-white flex flex-col gap-2 relative"
+                                >
+                                  {Object.entries(
+                                    prop.items.properties || {}
+                                  ).map(([subKey, subProp]: any) => (
+                                    <div
+                                      key={subKey}
+                                      className="flex flex-col gap-1"
+                                    >
+                                      <label className="text-xs font-semibold text-gray-700">
+                                        {subProp.title || subKey}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                        placeholder={
+                                          subProp.description || subProp.title
+                                        }
+                                        value={item[subKey] || ""}
+                                        onChange={(e) => {
+                                          const newArr = [
+                                            ...(input[key] || []),
+                                          ];
+                                          newArr[idx] = {
+                                            ...newArr[idx],
+                                            [subKey]: e.target.value,
+                                          };
+                                          handleInputChange(key, newArr);
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newArr = (input[key] || []).filter(
+                                        (_: any, i: number) => i !== idx
+                                      );
                                       handleInputChange(key, newArr);
                                     }}
-                                  />
+                                    className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                                  >
+                                    Remove
+                                  </button>
                                 </div>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newArr = (input[key] || []).filter((_: any, i: number) => i !== idx);
-                                  handleInputChange(key, newArr);
-                                }}
-                                className="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                              >Remove</button>
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newArr = [...(input[key] || []), {}];
-                              handleInputChange(key, newArr);
-                            }}
-                            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
-                          >Add {prop.title || "Item"}</button>
-                        </div>
-                      )}
+                              )
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newArr = [...(input[key] || []), {}];
+                                handleInputChange(key, newArr);
+                              }}
+                              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                            >
+                              Add {prop.title || "Item"}
+                            </button>
+                          </div>
+                        )}
                       {/* String List (Array) Input (default if no editor specified, or array of strings) */}
-                      {prop.type === "array" && (!prop.items || prop.items.type === "string" || !prop.items.type) && (!prop.editor || prop.editor === "stringList") && (
-                        <div className="space-y-2">
-                          {(input[key] || []).map(
-                            (item: string, index: number) => (
-                              <div key={index} className="flex gap-2">
-                                <input
-                                  type="text"
-                                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 bg-white text-sm"
-                                  placeholder={
-                                    prop.placeholderValue || prop.title
-                                  }
-                                  value={item}
-                                  onChange={(e) => {
-                                    const newArray = [...(input[key] || [])];
-                                    newArray[index] = e.target.value;
-                                    handleInputChange(key, newArray);
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newArray = (
-                                      input[key] || []
-                                    ).filter(
-                                      (_: any, i: number) => i !== index
-                                    );
-                                    handleInputChange(key, newArray);
-                                  }}
-                                  className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            )
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newArray = [...(input[key] || []), ""];
-                              handleInputChange(key, newArray);
-                            }}
-                            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
-                          >
-                            Add {prop.placeholderValue || "Item"}
-                          </button>
-                        </div>
-                      )}
+                      {prop.type === "array" &&
+                        (!prop.items ||
+                          prop.items.type === "string" ||
+                          !prop.items.type) &&
+                        (!prop.editor || prop.editor === "stringList") && (
+                          <div className="space-y-2">
+                            {(input[key] || []).map(
+                              (item: string, index: number) => (
+                                <div key={index} className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-900 bg-white text-sm"
+                                    placeholder={
+                                      prop.placeholderValue || prop.title
+                                    }
+                                    value={item}
+                                    onChange={(e) => {
+                                      const newArray = [...(input[key] || [])];
+                                      newArray[index] = e.target.value;
+                                      handleInputChange(key, newArray);
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newArray = (
+                                        input[key] || []
+                                      ).filter(
+                                        (_: any, i: number) => i !== index
+                                      );
+                                      handleInputChange(key, newArray);
+                                    }}
+                                    className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newArray = [...(input[key] || []), ""];
+                                handleInputChange(key, newArray);
+                              }}
+                              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm"
+                            >
+                              Add {prop.placeholderValue || "Item"}
+                            </button>
+                          </div>
+                        )}
                       {/* Select Dropdown */}
                       {prop.type === "string" && prop.editor === "select" && (
                         <select
@@ -491,10 +569,88 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                   )}
                   {runStatus === "running" ? "Running..." : "Run Actor"}
                 </button>
-                {runStatus === "success" && (
-                  <div className="text-green-600 text-base mt-3 font-semibold flex items-center gap-2">
-                    <FileText className="w-5 h-5" /> Actor run completed! (Mock
-                    result)
+                {/* Run Info Dialog */}
+                {showRunDialog && runInfo && (
+                  <div
+                    ref={dialogRef}
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                    onClick={(e) => {
+                      if (e.target === dialogRef.current)
+                        setShowRunDialog(false);
+                    }}
+                  >
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 relative border border-blue-200 animate-fadeIn">
+                      <button
+                        className="absolute top-3 right-3 text-gray-400 hover:text-blue-600 text-xl font-bold focus:outline-none"
+                        onClick={() => setShowRunDialog(false)}
+                        aria-label="Close dialog"
+                      >
+                        ×
+                      </button>
+                      <div className="flex items-center gap-2 mb-4">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <span className="text-lg font-bold text-blue-800">
+                          Actor Run Started
+                        </span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">Run ID:</span>{" "}
+                        <span className="font-mono break-all">
+                          {runInfo.id}
+                        </span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">Status:</span>{" "}
+                        <span className="font-mono">{runInfo.status}</span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">
+                          Default Dataset ID:
+                        </span>{" "}
+                        <span className="font-mono break-all">
+                          {runInfo.defaultDatasetId}
+                        </span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">Started At:</span>{" "}
+                        <span className="font-mono">
+                          {runInfo.startedAt
+                            ? new Date(runInfo.startedAt).toLocaleString()
+                            : "-"}
+                        </span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">Build:</span>{" "}
+                        <span className="font-mono">
+                          {runInfo.buildId || runInfo.build || "-"}
+                        </span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">Actor ID:</span>{" "}
+                        <span className="font-mono break-all">
+                          {runInfo.actId || runInfo.actorId || "-"}
+                        </span>
+                      </div>
+                      <div className="text-gray-700 text-base mb-2">
+                        <span className="font-semibold">API Endpoint:</span>{" "}
+                        <span className="font-mono break-all underline text-blue-500">
+                          https://api.apify.com/v2/acts/
+                          {runInfo.actId || runInfo.actorId || actor?.id}/runs/
+                          {runInfo.id}
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <pre className="bg-gray-950 rounded p-3 text-xs overflow-x-auto max-h-72 border border-gray-200">
+                          {JSON.stringify(runInfo, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {runStatus === "error" && runError && (
+                  <div className="text-red-600 text-base mt-3 font-semibold flex items-center gap-2">
+                    <FileText className="w-5 h-5" /> Failed to start actor run:{" "}
+                    {runError}
                   </div>
                 )}
               </form>
