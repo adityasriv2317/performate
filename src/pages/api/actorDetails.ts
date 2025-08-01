@@ -52,10 +52,12 @@ export default async function handler(
     }
 
     let inputSchema = null;
+
+    // get build id
     const latestBuildId = actorData.taggedBuilds?.latest?.buildId;
     console.log(
       `Latest build ID for actor ${actorRef}:`,
-      actorData.taggedBuilds
+      actorData.taggedBuilds?.latest?.buildId
     );
 
     if (latestBuildId) {
@@ -71,7 +73,17 @@ export default async function handler(
           buildInfoRes.data?.data?.inputSchema ||
           buildInfoRes.data?.inputSchema;
 
-        console.log(`Input schema for build ${latestBuildId}:`, inputSchema);
+        if (inputSchema && typeof inputSchema === "string") {
+          try {
+            inputSchema = JSON.parse(inputSchema);
+            console.log("input schema found and parsed successfully");
+          } catch (e) {
+            console.warn(
+              `Failed to parse input schema for build ID ${latestBuildId}:`,
+              e
+            );
+          }
+        }
       } catch (err) {
         console.warn(
           `Could not fetch input schema for build ID ${latestBuildId}:`,
@@ -106,6 +118,7 @@ export default async function handler(
       username: actorData.username,
       description: actorData.description,
       pictureUrl: actorData.pictureUrl,
+      inputSchema,
     });
   } catch (e) {
     console.error("Server error during API request:", e);

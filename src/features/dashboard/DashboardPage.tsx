@@ -27,8 +27,7 @@ export default function DashboardPage() {
       return;
     }
     
-    const apiKey = localStorage.getItem("apifyApiKey");
-    
+    const apiKey = typeof window !== "undefined" ? localStorage.getItem("apifyApiKey") || "" : "";
     (async () => {
       try {
         const res = await axios.get("/api/actors", {
