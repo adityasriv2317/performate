@@ -54,7 +54,7 @@ export default async function handler(
     let inputSchema = null;
 
 
-    // get build id (prefer latest, fallback to canary)
+    // get build id (default latest, else canary)
     let buildId = actorData.taggedBuilds?.latest?.buildId;
     let buildTagUsed = 'latest';
     if (!buildId && actorData.taggedBuilds?.canary?.buildId) {
@@ -64,7 +64,7 @@ export default async function handler(
 
     if (buildId) {
       try {
-        // Fetch the specific build details using its ID
+        // Fetch build details using its ID
         const buildInfoRes = await axios.get(
           `https://api.apify.com/v2/actor-builds/${buildId}`,
           { headers }

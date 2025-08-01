@@ -5,6 +5,7 @@ import {
   Rocket,
   ShieldCheck,
   ListChecks,
+  ArrowBigLeft,
   BarChart3,
 } from "lucide-react";
 import Link from "next/link";

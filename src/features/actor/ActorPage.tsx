@@ -10,6 +10,7 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  ArrowBigDown,
   DownloadIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -151,7 +152,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
     setExpandedFields((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Utility to check if a description overflows 3 lines
+  // if a description overflows 3 lines
   const descRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   useEffect(() => {
     if (!actor?.inputSchema?.properties) return;
@@ -160,22 +161,19 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
       if (descRefs.current[key]) {
         const el = descRefs.current[key]!;
         if (!expandedFields[key]) {
-          // Only measure overflow when collapsed
           el.classList.remove("line-clamp-3", "overflow-hidden");
           const isOverflowing = el.scrollHeight > el.clientHeight + 2;
           el.classList.add("line-clamp-3", "overflow-hidden");
           newOverflow[key] = isOverflowing;
         } else {
-          // When expanded, always show the collapse button if it was overflowing when collapsed
           newOverflow[key] = true;
         }
       }
     });
     setOverflowingFields(newOverflow);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actor, expandedFields]);
 
-  // Util: Run actor via Apify API
+  // Run actor using Apify API
   async function runActorAsync(
     actorId: string,
     inputObj: object,
@@ -198,7 +196,6 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
     }
   }
 
-  // Enhanced handleRun: start real actor run
   const [runInfo, setRunInfo] = useState<any>(null);
   const [runError, setRunError] = useState<string>("");
   const [showRunDialog, setShowRunDialog] = useState(false);
@@ -215,7 +212,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
           ? localStorage.getItem("apifyApiKey") || ""
           : "";
       if (!apiKey) throw new Error("No Apify API key found");
-      // actor.id is like 'apify~instagram-scraper'
+      // actor.id
       const run = await runActorAsync(actor.id, input, apiKey);
       setRunInfo(run);
       setRunStatus("success");
@@ -262,7 +259,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
           </div>
         ) : actor ? (
           <div className="bg-white/90 border border-gray-200 rounded-2xl p-4 sm:p-10 shadow-xl">
-            {/* Actor image and name section */}
+            {/* Actor data*/}
             <div className="flex flex-col items-center sm:flex-row sm:items-center sm:gap-8 mb-8">
               {actor.pictureUrl ? (
                 <div className="flex-shrink-0 flex items-center justify-center bg-white rounded-full shadow-lg w-20 h-20 sm:w-28 sm:h-28 overflow-hidden border-4 border-blue-200">
@@ -286,7 +283,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                 </div>
               </div>
             </div>
-            {/* Description and form below */}
+            {/* Description*/}
             <div className="text-gray-700 text-center sm:text-left mb-8 max-w-2xl mx-auto text-lg leading-relaxed">
               {actor.description}
             </div>
@@ -354,8 +351,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                           )}
                         </div>
                       ) : null}
-                      {/* Input fields always rendered below, regardless of description */}
-                      {/* Array of objects (container fields) */}
+                      {/* Array of input schema */}
                       {prop.type === "array" &&
                         prop.items &&
                         prop.items.type === "object" && (
@@ -423,7 +419,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                             </button>
                           </div>
                         )}
-                      {/* String List (Array) Input (default if no editor specified, or array of strings) */}
+                      {/* String array is default */}
                       {prop.type === "array" &&
                         (!prop.items ||
                           prop.items.type === "string" ||
@@ -554,7 +550,6 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
                           </span>
                         </label>
                       )}
-                      {/* Hidden fields are not rendered */}
                     </div>
                   )
                 )}
