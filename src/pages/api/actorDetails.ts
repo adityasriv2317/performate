@@ -34,7 +34,7 @@ export default async function handler(
         { headers }
       );
 
-      console.log(`Successfully fetched 1`);
+      // console.log(`Successfully fetched 1`);
     } catch (err) {
       const status = (err as any).response?.status || 500;
       const message =
@@ -53,6 +53,10 @@ export default async function handler(
 
     let inputSchema = null;
     const latestBuildId = actorData.taggedBuilds?.latest?.buildId;
+    console.log(
+      `Latest build ID for actor ${actorRef}:`,
+      actorData.taggedBuilds
+    );
 
     if (latestBuildId) {
       try {
@@ -62,10 +66,12 @@ export default async function handler(
           { headers }
         );
 
-        console.log(`Successfully fetched 2`);
+        // console.log(`Successfully fetched 2`);
         inputSchema =
           buildInfoRes.data?.data?.inputSchema ||
           buildInfoRes.data?.inputSchema;
+
+        console.log(`Input schema for build ${latestBuildId}:`, inputSchema);
       } catch (err) {
         console.warn(
           `Could not fetch input schema for build ID ${latestBuildId}:`,
@@ -83,7 +89,7 @@ export default async function handler(
         headers,
       });
 
-      console.log(`Successfully fetched 3`);
+      // console.log(`Successfully fetched 3`);
     } catch (err) {
       if ((err as any)?.response?.status !== 404) {
         console.error(
