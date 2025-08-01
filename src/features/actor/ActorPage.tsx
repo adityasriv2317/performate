@@ -14,6 +14,7 @@ import Logo from "../../components/Logo";
 import Link from "next/link";
 import axios from "axios";
 import { head } from "framer-motion/client";
+import { isAuthenticated } from "../../utils/auth";
 
 const handleDownload = (
   data: any,
@@ -64,8 +65,14 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
   const [error, setError] = useState("");
   const [input, setInput] = useState<any>({});
   const [runStatus, setRunStatus] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    if (!isAuthenticated()) {
+      router.push("/auth");
+      return;
+    }
+    
     if (!actorName || !username) return;
     setLoading(true);
     setError("");
@@ -104,7 +111,7 @@ export default function ActorPage({ actorName, username }: ActorPageProps) {
         setError(msg);
       })
       .finally(() => setLoading(false));
-  }, [actorName, username]);
+  }, [actorName, username, router]);
 
   const handleInputChange = (key: string, value: any) => {
     setInput((prev: any) => ({ ...prev, [key]: value }));

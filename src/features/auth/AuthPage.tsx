@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
 import { KeyRound, Eye, EyeOff, UserPlus, LogIn, ArrowLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { isAuthenticated } from "../../utils/auth";
 
 export default function AuthPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -12,6 +15,13 @@ export default function AuthPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      setLoading(true);
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

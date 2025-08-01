@@ -64,7 +64,7 @@ export default function ProfileMenu({ className = "" }: ProfileMenuProps) {
             onClick={() => {
               localStorage.removeItem("apifyApiKey");
               localStorage.removeItem("currentUser");
-              window.location.href = "/auth";
+              window.location.href = "/";
             }}
           >
             <LogOut className="w-4 h-4" /> Logout
